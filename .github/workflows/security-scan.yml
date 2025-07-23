@@ -1,0 +1,44 @@
+name: 🔒 Security Scanning
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly on Monday
+
+jobs:
+  security-scan:
+    name: 🔍 Security Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: 🔒 Run Security Scans
+      run: |
+        pip install safety bandit semgrep
+        
+        # Dependency vulnerability scan
+        safety check --json --output safety-report.json || true
+        
+        # Python security linting
+        bandit -r src/ -f json -o bandit-report.json || true
+        
+        # Static analysis
+        semgrep --config=auto src/ --json --output=semgrep-report.json || true
+    
+    - name: 📊 Upload Security Reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-reports
+        path: |
+          safety-report.json
+          bandit-report.json
+          semgrep-report.json
