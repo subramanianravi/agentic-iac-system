@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""
+Demo application runner for Agentic IaC System
+"""
+
+import sys
+import os
+import subprocess
+import argparse
+from pathlib import Path
+
+def setup_demo_app(app_name):
+    """Set up a demo application"""
+    print(f"🎯 Setting up demo application: {app_name}")
+    
+    demo_dir = Path("demo") / app_name
+    
+    if not demo_dir.exists():
+        print(f"❌ Demo directory {demo_dir} does not exist")
+        return False
+    
+    # Change to demo directory
+    os.chdir(demo_dir)
+    
+    if app_name == "simple-nodejs-api":
+        return setup_nodejs_demo()
+    elif app_name == "python-flask-app":
+        return setup_python_demo()
+    else:
+        print(f"❌ Unknown demo app: {app_name}")
+        return False
+
+def setup_nodejs_demo():
+    """Setup Node.js demo application"""
+    try:
+        print("📦 Installing Node.js dependencies...")
+        subprocess.run(["npm", "install"], check=True)
+        
+        print("🧪 Running tests...")
+        subprocess.run(["npm", "test"], check=True)
+        
+        print("✅ Node.js demo setup complete")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Node.js setup failed: {e}")
+        return False
+    except FileNotFoundError:
+        print("❌ npm not found. Please install Node.js")
+        return False
+
+def setup_python_demo():
+    """Setup Python demo application"""
+    try:
+        print("📦 Installing Python dependencies...")
+        if Path("requirements.txt").exists():
+            subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"], check=True)
+        
+        print("🧪 Running tests...")
+        subprocess.run([sys.executable, "-m", "pytest"], check=True)
+        
+        print("✅ Python demo setup complete")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Python setup failed: {e}")
+        return False
+
+def main():
+    parser = argparse.ArgumentParser(description="Demo application runner")
+    parser.add_argument("app_name", help="Name of the demo application to set up")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+    
+    args = parser.parse_args()
+    
+    if args.verbose:
+        print(f"Running demo setup for: {args.app_name}")
+        print(f"Current directory: {os.getcwd()}")
+        print(f"Available demos: {list(Path('demo').iterdir()) if Path('demo').exists() else 'No demo directory'}")
+    
+    success = setup_demo_app(args.app_name)
+    
+    if success:
+        print("🎉 Demo setup completed successfully!")
+        sys.exit(0)
+    else:
+        print("💥 Demo setup failed!")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
