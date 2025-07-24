@@ -1,7 +1,7 @@
 ---
 name: 🤖 Agentic AI Infrastructure Deployment
 
-on:
+'on':
   push:
     branches: [main, develop]
     paths:
@@ -903,7 +903,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test-type: [unit, integration, e2e, performance]
+        test-type: [unit, integration]
+        include:
+          - test-type: e2e
+          - test-type: performance
 
     steps:
       - name: 📥 Checkout Repository
