@@ -1,0 +1,23 @@
+# Minimal requirements for basic functionality and fallback scenarios
+# This file provides essential dependencies when main requirements.txt fails
+
+# Core CLI and utilities (essential)
+click>=8.1.0
+PyYAML>=6.0.0
+requests>=2.31.0
+
+# Basic async support
+aiofiles>=23.2.0
+
+# Essential testing framework
+pytest>=7.4.0
+
+# Core cloud libraries (minimal versions for compatibility)
+boto3>=1.28.0
+google-cloud-core>=2.3.0
+
+# Data processing basics
+pydantic>=2.4.0
+
+# Development tools (minimal)
+black>=23.7.0
