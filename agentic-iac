@@ -1,0 +1,146 @@
+#!/usr/bin/env python3
+"""
+Agentic Infrastructure as Code System - Main Entry Point
+"""
+
+import sys
+import os
+import argparse
+from pathlib import Path
+
+# Add src to Python path
+sys.path.insert(0, str(Path(__file__).parent / "src"))
+
+try:
+    from agentic_iac.orchestrator.main_orchestrator import MainOrchestrator
+    from agentic_iac.utils.logger import setup_logger
+    from agentic_iac.utils.config_manager import ConfigManager
+except ImportError as e:
+    print(f"❌ Import error: {e}")
+    print("Make sure you have installed the required dependencies and the src directory exists")
+    sys.exit(1)
+
+def analyze_application(app_path, config_path=None):
+    """Analyze an application for infrastructure requirements"""
+    logger = setup_logger("agentic-iac-analyzer")
+    logger.info(f"🧠 Starting AI-powered application analysis for: {app_path}")
+    
+    try:
+        # Load configuration
+        config_manager = ConfigManager(config_path)
+        config = config_manager.get_config()
+        
+        # Initialize orchestrator
+        orchestrator = MainOrchestrator(config)
+        
+        # Analyze the application
+        analysis_result = orchestrator.analyze_application(app_path)
+        
+        if analysis_result:
+            logger.info("✅ Application analysis completed successfully")
+            return analysis_result
+        else:
+            logger.error("❌ Application analysis failed")
+            return None
+            
+    except Exception as e:
+        logger.error(f"❌ Error during analysis: {e}")
+        return None
+
+def generate_infrastructure(app_path, output_dir=None):
+    """Generate infrastructure code for an application"""
+    logger = setup_logger("agentic-iac-generator")
+    logger.info(f"🏗️ Generating infrastructure for: {app_path}")
+    
+    try:
+        # Initialize orchestrator
+        orchestrator = MainOrchestrator()
+        
+        # Generate infrastructure
+        result = orchestrator.generate_infrastructure(app_path, output_dir)
+        
+        if result:
+            logger.info("✅ Infrastructure generation completed successfully")
+            return result
+        else:
+            logger.error("❌ Infrastructure generation failed")
+            return None
+            
+    except Exception as e:
+        logger.error(f"❌ Error during generation: {e}")
+        return None
+
+def main():
+    """Main entry point"""
+    parser = argparse.ArgumentParser(
+        description="Agentic Infrastructure as Code System",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  agentic-iac analyze ./demo-apps/simple-nodejs-api
+  agentic-iac generate ./demo-apps/simple-nodejs-api --output ./output
+  agentic-iac analyze ./demo-apps/python-flask-app --config config.yaml
+        """
+    )
+    
+    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    
+    # Analyze command
+    analyze_parser = subparsers.add_parser('analyze', help='Analyze application for infrastructure requirements')
+    analyze_parser.add_argument('app_path', help='Path to the application to analyze')
+    analyze_parser.add_argument('--config', '-c', help='Path to configuration file')
+    analyze_parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
+    
+    # Generate command
+    generate_parser = subparsers.add_parser('generate', help='Generate infrastructure code')
+    generate_parser.add_argument('app_path', help='Path to the application')
+    generate_parser.add_argument('--output', '-o', help='Output directory for generated infrastructure')
+    generate_parser.add_argument('--config', '-c', help='Path to configuration file')
+    generate_parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
+    
+    # Default analyze command for backward compatibility
+    if len(sys.argv) == 1:
+        print("🧠 Starting AI-powered application analysis...")
+        print("Usage: agentic-iac <command> [options]")
+        parser.print_help()
+        return
+    
+    # Handle case where first argument is a path (backward compatibility)
+    if len(sys.argv) > 1 and not sys.argv[1] in ['analyze', 'generate', '-h', '--help']:
+        print("🧠 Starting AI-powered application analysis...")
+        app_path = sys.argv[1]
+        result = analyze_application(app_path)
+        if result:
+            print("🎉 Analysis completed successfully!")
+            sys.exit(0)
+        else:
+            print("💥 Analysis failed!")
+            sys.exit(1)
+    
+    args = parser.parse_args()
+    
+    if not args.command:
+        parser.print_help()
+        return
+    
+    if args.command == 'analyze':
+        print("🧠 Starting AI-powered application analysis...")
+        result = analyze_application(args.app_path, args.config)
+        if result:
+            print("🎉 Analysis completed successfully!")
+            sys.exit(0)
+        else:
+            print("💥 Analysis failed!")
+            sys.exit(1)
+    
+    elif args.command == 'generate':
+        result = generate_infrastructure(args.app_path, args.output)
+        if result:
+            print("🎉 Infrastructure generation completed successfully!")
+            sys.exit(0)
+        else:
+            print("💥 Infrastructure generation failed!")
+            sys.exit(1)
+
+if __name__ == "__main__":
+    main()
