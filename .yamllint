@@ -1,0 +1,8 @@
+extends: default
+rules:
+  line-length:
+    max: 120  # More reasonable for GitHub Actions
+    level: warning
+  truthy:
+    allowed-values: ['true', 'false', 'on', 'off']
+    check-keys: false
