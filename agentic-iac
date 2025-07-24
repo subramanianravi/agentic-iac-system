@@ -2,19 +2,254 @@
 import sys
 from pathlib import Path
 
-print("🧠 Starting AI-powered application analysis...")
+def main():
+    print("🧠 Starting AI-powered application analysis...")
+    
+    # Parse arguments properly
+    args = sys.argv[1:]
+    
+    if not args:
+        print("❌ No arguments provided")
+        print("Usage: agentic-iac analyze <app_path>")
+        sys.exit(1)
+    
+    # Handle subcommand structure
+    if args[0] == "analyze":
+        if len(args) < 2:
+            print("❌ No application path provided")
+            print("Usage: agentic-iac analyze <app_path>")
+            sys.exit(1)
+        else:
+            requested_path = args[1]
+    else:
+        # Backward compatibility - treat first arg as app path
+        requested_path = args[0]
+    
+    print(f"📂 Analyzing: {requested_path}")
+    
+    # Find the actual application path
+    app_path = find_application_path(requested_path)
+    
+    if not app_path:
+        print("❌ No valid application path found")
+        sys.exit(1)
+    
+    # Perform analysis
+    analyze_application(app_path)
 
-app_path = sys.argv[1] if len(sys.argv) > 1 else "demo-apps/simple-nodejs-api"
-print(f"📂 Analyzing: {app_path}")
-
-if Path(app_path).exists():
-    print(f"✅ Application found at: {app_path}")
-    print("🔍 Performing AI analysis...")
-    print("📊 Generating infrastructure recommendations...")
-    print("🎉 Analysis completed successfully!")
-else:
-    print(f"❌ Application not found at: {app_path}")
+def find_application_path(requested_path):
+    """Find the actual application path, trying multiple locations"""
+    
+    # Try the exact path first
+    if Path(requested_path).exists():
+        print(f"✅ Found application at: {requested_path}")
+        return requested_path
+    
+    print(f"❌ Application not found at: {requested_path}")
+    
+    # Extract app name from path
+    app_name = Path(requested_path).name
+    if "/" in requested_path:
+        app_name = requested_path.split("/")[-1]
+    
+    # Try alternative locations
+    alternative_paths = [
+        f"demo/{app_name}",
+        f"demo-apps/{app_name}",
+        f"examples/{app_name}",
+        f"apps/{app_name}",
+        app_name,  # Just the app name in current directory
+    ]
+    
+    print("🔍 Searching alternative locations...")
+    for alt_path in alternative_paths:
+        if Path(alt_path).exists():
+            print(f"✅ Found application at alternative location: {alt_path}")
+            return alt_path
+    
+    # Show available directories
     print("Available directories:")
+    demo_dirs = []
     for p in Path(".").iterdir():
         if p.is_dir() and not p.name.startswith('.'):
             print(f"  - {p.name}/")
+            # Check for subdirectories in demo-like folders
+            if p.name in ["demo", "demo-apps", "examples", "apps"]:
+                for subp in p.iterdir():
+                    if subp.is_dir():
+                        demo_dirs.append(str(subp))
+                        print(f"    - {subp}")
+    
+    # Suggest available demo apps
+    if demo_dirs:
+        print("\n💡 Available demo applications:")
+        for demo_dir in demo_dirs:
+            print(f"  - {demo_dir}")
+        print(f"\n💡 Try: python3 agentic-iac analyze {demo_dirs[0]}")
+    
+    return None
+
+def analyze_application(app_path):
+    """Analyze the application and generate output"""
+    app_path_obj = Path(app_path)
+    print(f"📊 Application type detection for: {app_path}")
+    
+    analysis_results = {
+        "app_path": str(app_path),
+        "app_type": "unknown",
+        "recommendations": [],
+        "infrastructure": {}
+    }
+    
+    # Detect application type
+    if (app_path_obj / "package.json").exists():
+        print("  🟢 Node.js application detected")
+        analysis_results["app_type"] = "nodejs"
+        analyze_nodejs_app(app_path_obj, analysis_results)
+    elif (app_path_obj / "requirements.txt").exists() or (app_path_obj / "app.py").exists():
+        print("  🟢 Python application detected")
+        analysis_results["app_type"] = "python"
+        analyze_python_app(app_path_obj, analysis_results)
+    elif (app_path_obj / "pom.xml").exists():
+        print("  🟢 Java application detected")
+        analysis_results["app_type"] = "java"
+        analyze_java_app(app_path_obj, analysis_results)
+    else:
+        print("  🟡 Generic application - performing basic analysis")
+        analysis_results["app_type"] = "generic"
+        analyze_generic_app(app_path_obj, analysis_results)
+    
+    # Generate output file
+    generate_output_file(analysis_results)
+    
+    print("🎉 AI-powered analysis completed successfully!")
+
+def analyze_nodejs_app(app_path, results):
+    """Analyze Node.js application"""
+    print("  📦 Analyzing package.json...")
+    
+    try:
+        import json
+        with open(app_path / "package.json") as f:
+            package_data = json.load(f)
+        
+        print(f"    - Name: {package_data.get('name', 'Unknown')}")
+        print(f"    - Version: {package_data.get('version', 'Unknown')}")
+        
+        dependencies = package_data.get('dependencies', {})
+        print(f"    - Dependencies: {len(dependencies)} packages")
+        
+        results["infrastructure"] = {
+            "container": "node:18-alpine",
+            "port": 3000,
+            "health_check": "/health",
+            "build_command": "npm install",
+            "start_command": "npm start"
+        }
+        
+        if 'express' in dependencies:
+            print("    - 🌐 Express.js web framework detected")
+            results["recommendations"].extend([
+                "Use load balancer for high availability",
+                "Deploy multiple container instances",
+                "Consider Redis for session storage",
+                "Add request rate limiting"
+            ])
+        
+        if 'cors' in dependencies:
+            print("    - 🔒 CORS middleware detected")
+            
+    except Exception as e:
+        print(f"    ❌ Error analyzing package.json: {e}")
+
+def analyze_python_app(app_path, results):
+    """Analyze Python application"""
+    print("  🐍 Analyzing Python application...")
+    
+    results["infrastructure"] = {
+        "container": "python:3.9-slim",
+        "port": 5000,
+        "health_check": "/health",
+        "build_command": "pip install -r requirements.txt",
+        "start_command": "python app.py"
+    }
+    
+    if (app_path / "requirements.txt").exists():
+        print("    - requirements.txt found")
+        try:
+            with open(app_path / "requirements.txt") as f:
+                reqs = f.read().strip().split('\n')
+            print(f"    - Dependencies: {len([r for r in reqs if r.strip()])} packages")
+            
+            if any('flask' in req.lower() for req in reqs):
+                print("    - 🌐 Flask web framework detected")
+                results["recommendations"].append("Use WSGI server (Gunicorn) for production")
+            if any('django' in req.lower() for req in reqs):
+                print("    - 🌐 Django web framework detected")
+                results["recommendations"].extend(["PostgreSQL database", "Static file serving"])
+                
+        except Exception as e:
+            print(f"    ❌ Error reading requirements.txt: {e}")
+
+def analyze_java_app(app_path, results):
+    """Analyze Java application"""
+    print("  ☕ Java application detected")
+    results["infrastructure"] = {
+        "container": "openjdk:17-jre-slim",
+        "port": 8080,
+        "health_check": "/actuator/health"
+    }
+    results["recommendations"].extend([
+        "JVM memory optimization",
+        "Container resource limits",
+        "Application monitoring with Micrometer"
+    ])
+
+def analyze_generic_app(app_path, results):
+    """Analyze generic application"""
+    print("  📁 Performing generic file analysis...")
+    
+    file_count = len(list(app_path.rglob("*")))
+    print(f"    - Total files: {file_count}")
+    
+    # Check for common files
+    common_files = ["Dockerfile", "docker-compose.yml", "README.md", ".env"]
+    found_files = []
+    for file_name in common_files:
+        if (app_path / file_name).exists():
+            found_files.append(file_name)
+            print(f"    - ✅ {file_name} found")
+    
+    results["recommendations"].append("Custom containerization strategy needed")
+    if found_files:
+        results["recommendations"].append(f"Found configuration files: {', '.join(found_files)}")
+
+def generate_output_file(results):
+    """Generate analysis output file"""
+    output_dir = Path("results")
+    output_dir.mkdir(exist_ok=True)
+    
+    output_file = output_dir / "analysis-results.txt"
+    
+    with open(output_file, "w") as f:
+        f.write("# Agentic IaC Analysis Results\n\n")
+        f.write(f"Application Path: {results['app_path']}\n")
+        f.write(f"Application Type: {results['app_type']}\n\n")
+        
+        if results['infrastructure']:
+            f.write("## Infrastructure Recommendations\n")
+            for key, value in results['infrastructure'].items():
+                f.write(f"- {key}: {value}\n")
+            f.write("\n")
+        
+        if results['recommendations']:
+            f.write("## Additional Recommendations\n")
+            for rec in results['recommendations']:
+                f.write(f"- {rec}\n")
+        
+        f.write(f"\nAnalysis completed from: {Path.cwd()}\n")
+    
+    print(f"📄 Analysis results saved to: {output_file}")
+
+if __name__ == "__main__":
+    main()
