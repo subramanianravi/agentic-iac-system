@@ -55,7 +55,7 @@ on:
 env:
   AWS_REGION: us-west-2
   GCP_REGION: us-central1
-  KUBERNETES_VERSION: "1.28"
+  KUBERNETES_VERSION: "1.28.0"
   PYTHON_VERSION: "3.11"
   DEMO_TIMEOUT_MINUTES: 30
   
@@ -142,7 +142,7 @@ jobs:
       if: steps.source.outputs.is_demo == 'true'
       run: |
         echo "🎯 Setting up demo application: ${{ steps.source.outputs.demo_app }}"
-        python demo-runner setup ${{ steps.source.outputs.demo_app }} --target-dir ${{ steps.source.outputs.repo_path }}
+        python demo-runner.py setup ${{ steps.source.outputs.demo_app }} --target-dir ${{ steps.source.outputs.repo_path }}
     
     - name: 🤖 Execute AI Analysis
       id: analysis
@@ -405,7 +405,7 @@ jobs:
     - name: ⚙️ Setup Kubernetes Tools
       uses: azure/setup-kubectl@v3
       with:
-        version: ${{ env.KUBERNETES_VERSION }}
+        version: 'v${{ env.KUBERNETES_VERSION }}'
     
     - name: ☁️ Configure Cloud Credentials
       uses: aws-actions/configure-aws-credentials@v4
